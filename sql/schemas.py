@@ -13,5 +13,11 @@ class ScoreBase(BaseModel):
 class UpdateScore(BaseModel):
     studentID : int
     subjectID : int
-    midScore: int
-    endScore: int
+    midScore: float
+    endScore: float
+
+class ClassBase(BaseModel):
+    classID : int
+class Classroom(BaseModel):
+    className: str
+    classid: int

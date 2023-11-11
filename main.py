@@ -33,9 +33,9 @@ while True:
 
 
 app = FastAPI( title= "Quản lý điểm sinh viên",
-              description= des.description)
+              description= des.description, openapi_tags= des.tags )
 
-@app.get('/')
+@app.get('/', response_class=HTMLResponse, tags=['Trang chủ'])
 def home():
     html_content = '''
     <!DOCTYPE html>
@@ -63,7 +63,8 @@ def home():
 
 ################## AnhThu numpy     
 # Calculate the percentage of non zero final scores
-@app.get("/NonZeroNP")
+@app.get("/NonZeroNP", tags=['Anh Thư Numpy'],
+         description=des.des_api['AnhThuNP']['ThongKeDiem0'])
 def non_zero(db: Session = Depends(get_db)):
     query_rs = db.query(models.Grade.final.label("Grade")).all()
     array = np.array(query_rs)
@@ -78,12 +79,13 @@ def non_zero(db: Session = Depends(get_db)):
 
 
 #Change student's one subject score 
-@app.post("/ChangeScoreNP")
+@app.post("/ChangeScoreNP", tags=['Anh Thư Numpy'],
+          description=des.des_api['AnhThuNP']['CapNhatDiemSo'])
 def get_change(student : schema.UpdateScore, db : Session = Depends(get_db)):
      if student.studentID > 0 and student.subjectID > 0:
         if student.midScore < 4:
             student.endScore = 0
-            data = db.query(models.Grade).filter(
+            db.query(models.Grade).filter(
             and_(
                  models.Grade.student_id == student.studentID,
                  models.Grade.subject_id == student.subjectID
@@ -96,7 +98,7 @@ def get_change(student : schema.UpdateScore, db : Session = Depends(get_db)):
              })
         else:
 
-            data = db.query(models.Grade).filter(
+            db.query(models.Grade).filter(
                  and_(
                       models.Grade.student_id == student.studentID,
                       models.Grade.subject_id == student.subjectID
@@ -131,7 +133,8 @@ def get_change(student : schema.UpdateScore, db : Session = Depends(get_db)):
 
 ################## AnhThu pandas
 #Students that achived score "10" for final, return a html table
-@app.get("/getTopPD")
+@app.get("/getTopPD", tags=['Anh Thư Pandas'],
+         description= des.des_api['AnhThuPD']['DanhSachDiem10'])
 def get_top(db : Session = Depends(get_db)):
     query_rs = db.query(models.Student.name.label("Name"), models.Subject.name.label("Subject"),
                          models.Grade.final.label("Score")).filter(
@@ -145,7 +148,8 @@ def get_top(db : Session = Depends(get_db)):
     return HTMLResponse(content = table, status_code = 200)
 
 #Students that achived the same score as the input
-@app.post("/getSimilarPD")
+@app.post("/getSimilarPD", tags=['Anh Thư Pandas'],
+          description=des.des_api['AnhThuPD']['DanhSachGiongNhau'])
 def get_similar(score : schema.ScoreBase, db : Session = Depends(get_db)):
     if score.midScore < 4:
         score.endScore = 0
@@ -170,4 +174,122 @@ def get_similar(score : schema.ScoreBase, db : Session = Depends(get_db)):
     webbrowser.open(os.getcwd() + '/similar_list.html')
     return HTMLResponse(content = table, status_code = 200)
 
-##############################
+############################## VuDuong Region
+## np
+## Lấy sĩ số lớp dựa theo mã lớp
+@app.post('/subject/GetClassSize', tags=["Thế Dương Numpy"],
+          description= des.des_api['TheDuongNP']['SiSoLop'])
+
+def Send_Id_GetClassSz(classID : schema.ClassBase , db: Session = Depends(get_db)):
+    if classID.classID != None and classID.classID > 0:
+        classSz = db.query(models.Student).join(models.Class).filter(models.Class.id == classID.classID).all()
+        fullClass = db.query(models.Class).all()
+        #Tổng số học sinh trong lớp
+        num_Student_inClass = len(np.array(classSz))
+        #Tổng số lớp
+        allClass = len(np.array(fullClass))
+
+        if (classID.classID > allClass):
+            return f"Mã lớp {classID.classID} không tồn tại !"
+        else:
+            return f"Sĩ số lớp có mã lớp {classID.classID} là {num_Student_inClass} học sinh"
+    else:
+        raise HTTPException(status_code=404, detail=
+            f"Mã lớp {classID.classID} không hợp lệ !"
+        )
+#np
+#Hiển thị điểm trung bình môn theo mã lớp, mã môn
+@app.get('/subject/ClassSubjectAvgPoint/{classid}/{subjectid}',
+         tags = ['Thế Dương Numpy'],
+         description= des.des_api['TheDuongNP']['TrungBinhMon'])
+
+def get_avg_point_subject(  classid: Union[int, None] = None, subjectid: Union[int, None] = None , db: Session = Depends(get_db)):
+        if classid > 0:
+            if subjectid > 0:
+                classPoint = db.query(  models.Subject.name.label('Môn học'),
+                                        models.Class.name.label('Lớp'),
+                                        models.Grade.final.label('Điểm tổng kết')
+                                    ).select_from(models.Student).join(models.Class).join(models.Grade).join(models.Subject).filter(
+                                    and_(
+                                        models.Student.class_id == classid,
+                                        models.Grade.subject_id == subjectid
+                                        )
+                                        ).all()
+                df = pd.DataFrame.from_dict(classPoint)
+                Lop = df['Lớp'][0]
+                subject = df['Môn học'][0]
+                diemTK= np.array([df['Điểm tổng kết']])
+                diem = np.round(np.mean(diemTK), 1)
+                return f'Điểm trung bình môn {subject} của lớp {Lop} là {diem}'
+            else:
+                raise HTTPException(status_code=404, detail={
+                    "field": "subjectid",
+                    "errMsg": "Thông tin không hợp lệ"
+                })
+        else:
+            raise HTTPException(status_code=404, detail={
+                "field": "classid",
+                "errMsg": "Thông tin không hợp lệ"
+            })
+        
+#pd
+#Thống kê điểm của môn học theo lớp
+@app.get('/statistic/Subject/{subjectid}',
+         tags = ['Thế Dương Pandas'],
+         description= des.des_api['TheDuongPD']['ThongKeDiemTheoMonHoc'])
+def get_point_subject_class(subjectid: int, db: Session = Depends(get_db)):
+    if(subjectid > 0):
+        getSubject = db.query(models.Subject).all()
+        if(subjectid > len(getSubject)):
+            return {
+                "msg": "Không tồn tại môn học"
+            }
+        else:
+            listStudent = db.query(models.Student.name.label('Họ và tên'),
+                    models.Class.name.label('Lớp'),
+                    models.Subject.name.label('Môn học'),
+                    models.Grade.mid_term.label('Điểm giữa kỳ'),
+                    models.Grade.end_term.label('Điểm cuối kỳ'),
+                    models.Grade.final.label('Điểm tổng kết')).select_from(models.Student).join(models.Class).join(models.Grade).join(models.Subject).filter(
+                     and_(
+                            models.Grade.subject_id == subjectid
+                        )
+                    ).all()
+            if( len(listStudent) != 0):
+                df = pd.DataFrame.from_dict(listStudent)
+                classList = df.groupby(df['Lớp']).mean(numeric_only = True).applymap(lambda x: np.round(x, 2))
+                subjectName = df['Môn học'][0]
+                return {
+                    "msg": f"Thống kê điểm tổng kết theo lớp môn {subjectName}",
+                    "data" : classList.T
+                }
+            else:
+                return {
+                    "msg": "Không tồn tại bản ghi nào"
+                }
+    else:
+        raise HTTPException(status_code=404, detail={
+                "field" : "subjectid",
+                "errMsg" : "Giá trị subjectid không thể nhỏ hơn hoặc bằng 0"
+            })
+#pd
+#Cập nhật tên lớp theo mã lớp
+@app.post('/class/UpdateNameClass', tags=['Thế Dương Pandas'],
+          description= des.des_api['TheDuongPD']['CapNhatTenLop'])
+def post_classroom(classroom: schema.Classroom, db : Session = Depends(get_db)):
+    result = " "
+    if classroom.classid >0 :
+        db.query(models.Class).filter(models.Class.id == classroom.classid).update(
+            {
+                'name': classroom.className
+            })
+        db.commit()
+        result = db.query(models.Class).filter(models.Class.id == classroom.classid).first()
+    
+    else:
+        result = {
+            "field": "classid",
+            "errMsg": "Thông tin không hợp lệ"
+        }
+
+    return result
