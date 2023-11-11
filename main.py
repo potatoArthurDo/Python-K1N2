@@ -82,50 +82,57 @@ def non_zero(db: Session = Depends(get_db)):
 @app.post("/ChangeScoreNP", tags=['Anh Thư Numpy'],
           description=des.des_api['AnhThuNP']['CapNhatDiemSo'])
 def get_change(student : schema.UpdateScore, db : Session = Depends(get_db)):
-     if student.studentID > 0 and student.subjectID > 0:
-        if student.midScore < 4:
-            student.endScore = 0
-            db.query(models.Grade).filter(
-            and_(
-                 models.Grade.student_id == student.studentID,
-                 models.Grade.subject_id == student.subjectID
-            )
-             ).update({
-            'mid_term' : student.midScore,
-            'end_term' : 0,
-            'final' : 0
-            
-             })
-        else:
+     if student.studentID > 0:
+        if student.subjectID > 0 and student.subjectID < 6:
+            if student.midScore < 4:
+                student.endScore = 0
+                db.query(models.Grade).filter(
+                and_(
+                     models.Grade.student_id == student.studentID,
+                     models.Grade.subject_id == student.subjectID
+                )
+                 ).update({
+                'mid_term' : student.midScore,
+                'end_term' : 0,
+                'final' : 0
 
-            db.query(models.Grade).filter(
+                 })
+            else:
+
+                db.query(models.Grade).filter(
+                     and_(
+                          models.Grade.student_id == student.studentID,
+                          models.Grade.subject_id == student.subjectID
+                     )
+                ).update({
+                     'mid_term' : student.midScore,
+                     'end_term' : student.endScore,
+                     'final' :np.round( student.midScore * 0.3 + student.endScore * 0.7)
+
+                })
+            db.commit()
+            query_rs = db.query(models.Student.name.label("Name"),
+                                models.Subject.name.label("Subject"),
+                                models.Grade.mid_term.label("Mid Term"),
+                                models.Grade.end_term.label("End Term"),
+                                models.Grade.final.label("Final")).select_from(models.Student).join(models.Grade).join(models.Subject).filter(
                  and_(
-                      models.Grade.student_id == student.studentID,
+                      models.Grade.student_id== student.studentID,
                       models.Grade.subject_id == student.subjectID
+
                  )
-            ).update({
-                 'mid_term' : student.midScore,
-                 'end_term' : student.endScore,
-                 'final' :np.round( student.midScore * 0.3 + student.endScore * 0.7)
+            ).all()
+            return query_rs
+        else:
+             raise HTTPException(status_code=404, detail= {
+             "field" : "subjectID",
+             "msg" : "Subject ID is a number from 1 to 5"
+         })
 
-            })
-        db.commit()
-        query_rs = db.query(models.Student.name.label("Name"),
-                            models.Subject.name.label("Subject"),
-                            models.Grade.mid_term.label("Mid Term"),
-                            models.Grade.end_term.label("End Term"),
-                            models.Grade.final.label("Final")).select_from(models.Student).join(models.Grade).join(models.Subject).filter(
-             and_(
-                  models.Grade.student_id== student.studentID,
-                  models.Grade.subject_id == student.subjectID
-
-             )
-        ).all()
-        return query_rs
      else:
          raise HTTPException(status_code=404, detail= {
-             "field" : "studentID, subjectID",
-             "msg" : "Invalid input"
+             "field" : "studentID",
+             "msg" : "Student ID must be larger than 0"
          })
                
 
@@ -151,28 +158,36 @@ def get_top(db : Session = Depends(get_db)):
 @app.post("/getSimilarPD", tags=['Anh Thư Pandas'],
           description=des.des_api['AnhThuPD']['DanhSachGiongNhau'])
 def get_similar(score : schema.ScoreBase, db : Session = Depends(get_db)):
-    if score.midScore < 4:
-        score.endScore = 0
-    data = db.query(
-                    models.Student.id.label("Student ID"),
-                     models.Student.name.label("Student Name"),
-                     models.Class.name.label("Class"),
-                    models.Subject.name.label("Subject"),
-                    models.Grade.mid_term.label("Mid term"),
-                    models.Grade.end_term.label("End term")
-                    ).select_from(models.Student).join(models.Class).join(models.Grade).join(models.Subject).filter(
-                        and_(
-                            models.Grade.mid_term == score.midScore,
-                            models.Grade.end_term == score.endScore
-                        )
-                    ).all()
-    df = pd.DataFrame.from_dict(data)
-    table = df.to_html()
-    text_file = open("similar_list.html", "w")
-    text_file.write(table)
-    text_file.close()
-    webbrowser.open(os.getcwd() + '/similar_list.html')
-    return HTMLResponse(content = table, status_code = 200)
+    if score.midScore < 0 or score.endScore < 0:
+         raise HTTPException(status_code=404, detail= {
+             "field" : "midScore,endScore",
+             "msg" : "Score must be postitive"
+         })
+    else:
+        if score.midScore < 4:
+            score.endScore = 0
+        data = db.query(
+                        models.Student.id.label("Student ID"),
+                         models.Student.name.label("Student Name"),
+                         models.Class.name.label("Class"),
+                        models.Subject.name.label("Subject"),
+                        models.Grade.mid_term.label("Mid term"),
+                        models.Grade.end_term.label("End term")
+                        ).select_from(models.Student).join(models.Class).join(models.Grade).join(models.Subject).filter(
+                            and_(
+                                models.Grade.mid_term == score.midScore,
+                                models.Grade.end_term == score.endScore
+                            )
+                        ).all()
+        df = pd.DataFrame.from_dict(data)
+        if (data == []) :
+            return {"result" : "No data"}
+        table = df.to_html()
+        text_file = open("similar_list.html", "w")
+        text_file.write(table)
+        text_file.close()
+        webbrowser.open(os.getcwd() + '/similar_list.html')
+        return HTMLResponse(content = table, status_code = 200)
 
 ############################## VuDuong Region
 ## np
