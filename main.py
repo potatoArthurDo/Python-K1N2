@@ -4,7 +4,6 @@ import webbrowser
 from fastapi import  FastAPI, Depends, HTTPException, Response
 from typing import Union
 from fastapi.responses import HTMLResponse
-
 from sqlalchemy import and_
 import sql.models as models
 from database import engine, get_db
@@ -308,3 +307,118 @@ def post_classroom(classroom: schema.Classroom, db : Session = Depends(get_db)):
         }
 
     return result
+
+############################## TranTu Region
+#Numpy
+
+#Tính điểm trung bình cuối kì tất cả các môn của một học sinh theo mã học sinh
+@app.get('/average_grade/{student_id}', tags=['Trần Văn Tú Numpy'],
+         description= des.des_api['TranTuNP']['TrungBinhCuoiKi'])
+def get_average_grade(student_id: int, db: Session = Depends(get_db)):
+
+    student = db.query(models.Student).filter(models.Student.id == student_id).first()
+
+    if student:
+        grades = db.query(models.Grade).filter(models.Grade.student_id == student_id).all()
+
+        if grades:
+            grade_values = np.array([grade.final for grade in grades])
+            average_grade = np.mean(grade_values)
+            return student.name + ' mã học sinh ' + str(student_id) + ' có điểm cuối kì trung bình là  ' + str(average_grade)
+        
+        else:
+            return {
+                "Không tồn tại bản ghi nào"
+            }
+        
+    else:
+        raise HTTPException(status_code=404, detail=f"Học sinh với ID {student_id} không tồn tại.")
+    
+################################
+#Điểm trung bình cuối kì tất cả các môn của một lớp theo mã lớp
+@app.post('/class/CalculateClassAvg', tags=['Trần Văn Tú Numpy'],
+          description= des.des_api['TranTuNP']['TrungBinhCuoiKiLop'])
+def Calculate_Class_Avg(classID: schema.ClassBase, db: Session = Depends(get_db)):
+    if classID.classID != None and classID.classID > 0:
+        
+        grades = db.query(models.Grade).join(models.Student).join(models.Class).filter(models.Class.id == classID.classID).all()
+
+        finals = np.array([grade.final for grade in grades])
+
+        avg_final = np.mean(finals)
+        
+        # Lấy danh sách tất cả lớp
+        fullClass = db.query(models.Class).all()
+        
+        # Tính tổng số lớp
+        allClass = len(np.array(fullClass))
+        
+        if classID.classID > allClass:
+            return f"Mã lớp {classID.classID} không tồn tại!"
+        else:
+            return f"Điểm trung bình cuối tất cả các môn của lớp có mã lớp {classID.classID} là {avg_final:.2f}"
+    else:
+        raise HTTPException(status_code=404, detail=f"Mã lớp {classID.classID} không hợp lệ!")
+    
+
+#Pandas
+
+#Đếm số học sinh qua môn
+@app.get('/passing_students/{subject_id}', tags=['Trần Văn Tú Pandas'],
+         description=des.des_api['TranTuPD']['QuaMon'])
+def count_passing_students_by_subject(subject_id: int, db: Session = Depends(get_db)):
+    if subject_id > 0:
+        get_subject = db.query(models.Subject).all()
+        if subject_id > len(get_subject):
+            return {"msg": "Không tồn tại môn học"}
+        else:
+            subject = get_subject[subject_id - 1]
+
+            df_students = pd.read_sql_query(
+                f"SELECT final AS 'Điểm tổng kết' FROM Student "
+                f"JOIN Class ON Student.class_id = Class.id "
+                f"JOIN Grade ON Student.id = Grade.student_id "
+                f"JOIN Subject ON Grade.subject_id = Subject.id "
+                f"WHERE Subject.id = {subject_id} AND Grade.final >= 4",
+                db.bind
+            )
+
+            num_passing_students = len(df_students)
+
+            return {
+                "msg": f"Số học sinh qua môn {subject.name} là: {num_passing_students}"
+            }
+    else:
+        raise HTTPException(status_code=404, detail={
+            "field": "subject_id",
+            "errMsg": "Giá trị subject_id không thể nhỏ hơn hoặc bằng 0"
+        })
+
+#Cập nhật tên môn học
+@app.post('/subject/UpdateSubjectName', tags=['Trần Văn Tú Pandas'],
+          description=des.des_api['TranTuPD']['CapNhatTenMon'])
+def update_subject_name(subject_update: schema.SubjectUpdate, db: Session = Depends(get_db)):
+    result = {}
+    subject = db.query(models.Subject).filter(models.Subject.id == subject_update.subject_id).first()
+    
+    if subject:
+        db.query(models.Subject).filter(models.Subject.id == subject_update.subject_id).update(
+            {
+                'name': subject_update.subject_name
+            }
+        )
+        db.commit()
+        
+        updated_subject = db.query(models.Subject).filter(models.Subject.id == subject_update.subject_id).first()
+        
+        result = {
+            'message': 'Tên môn đã được cập nhật',
+            'updated_subject': updated_subject
+        }
+    else:
+        result = {
+            'message': 'Mã môn không tồn tại'
+        }
+
+    return result
+

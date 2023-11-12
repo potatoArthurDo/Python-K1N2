@@ -26,6 +26,14 @@ tags = [
     {
         "name" : "Thế Dương Pandas",
         "description" : "Hiển thị điểm trung bình theo môn và Thống kê điểm của môn học theo lớp."
+    },
+    {
+        "name" : "Trần Văn Tú Numpy",
+        "description" : "Tính điểm trung bình cuối kì tất cả các môn theo sinh viên và Điểm trung bình cuối kì tất cả các môn theo lớp."
+    },
+    {
+        "name" : "Trần Văn Tú Pandas",
+        "description" : "Đếm số học sinh qua môn và Cập nhật tên môn học."
     }
 ]
 
@@ -47,4 +55,14 @@ des_api = {
         "ThongKeDiemTheoMonHoc" : "Nhập vào mã môn học có giá trị nguyên dương. Trả về danh sách điểm của môn học theo lớp.",
         "CapNhatTenLop" : "Đầu vào là mã lớp có giá trị nguyên dương, tên lớp để thay có kiểu string."
     },
+
+    "TranTuNP" : {
+        "TrungBinhCuoiKi" : "Nhập vào mã sinh viên mang giá trị nguyên dương, hiển thị điểm cuối kì trung bình của sinh viên đó.",
+        "TrungBinhCuoiKiLop" : "Đầu vào là mã lớp mang giá trị nguyên dương, hiển thị điểm trung bình cuối kì các môn của lớp."
+    },
+
+    "TranTuPD" : {
+        "QuaMon" : "Nhập vào mã môn có giá trị nguyên dương, trả về số học sinh qua môn học.",
+        "CapNhatTenMon" : "Đầu vào mã môn có giá trị nguyên dương và tên môn học mới."
+    }
 }
