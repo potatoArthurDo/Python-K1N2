@@ -32,7 +32,11 @@ while True:
 
 
 app = FastAPI( title= "Quản lý điểm sinh viên",
-              description= des.description, openapi_tags= des.tags )
+              description= des.description, openapi_tags= des.tags,
+               contact={
+                   "name" : "Source code",
+                   "url" : "https://github.com/potatoArthurDo/Python-K1N2/tree/main"
+               } )
 
 @app.get('/', response_class=HTMLResponse, tags=['Trang chủ'])
 def home():
@@ -46,7 +50,7 @@ def home():
 </head>
 <body>
     <div style="text-align: center;"><h1>BÀI TẬP LỚN MÔN PYTHON</h1></div>
-    <div style="text-align: center; color: maroon; font-size: 24px; font-weight: 500;">Nhóm 3</div>
+    <div style="text-align: center; color: maroon; font-size: 24px; font-weight: 500;">Nhóm 5</div>
     <div style="text-align: center; color: maroon; font-size: 25px; font-weight: 600;">Quản lý điểm sinh viên</div>
     <div style="text-align: left; font-size:  20px; font-weight: 700;">Thành viên: </div>
     <div s><ul style="list-style-type: none; display: block; text-align: left; font-size: 18px;; font-weight: 500;color: navy;">
