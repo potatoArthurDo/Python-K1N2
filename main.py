@@ -125,7 +125,8 @@ def get_change(student : schema.UpdateScore, db : Session = Depends(get_db)):
 
                  )
             ).all()
-            return query_rs
+            df = pd.DataFrame.from_dict(query_rs)
+            return df.T
         else:
              raise HTTPException(status_code=404, detail= {
              "field" : "subjectID",
