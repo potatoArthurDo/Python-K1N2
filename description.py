@@ -33,7 +33,7 @@ tags = [
     },
     {
         "name" : "Trần Văn Tú Pandas",
-        "description" : "Đếm số học sinh qua môn và Cập nhật tên môn học."
+        "description" : "Đếm số sinh viên qua môn và Cập nhật tên môn học."
     }
 ]
 
@@ -62,7 +62,7 @@ des_api = {
     },
 
     "TranTuPD" : {
-        "QuaMon" : "Nhập vào mã môn có giá trị nguyên dương, trả về số học sinh qua môn học.",
+        "QuaMon" : "Nhập vào mã môn có giá trị nguyên dương, trả về số sinh viên qua môn học.",
         "CapNhatTenMon" : "Đầu vào mã môn có giá trị nguyên dương và tên môn học mới."
     }
 }
