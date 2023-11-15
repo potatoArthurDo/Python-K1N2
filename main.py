@@ -74,7 +74,7 @@ def non_zero(db: Session = Depends(get_db)):
     np.reshape(array, -1)
     non = np.count_nonzero(array)/100
     return {
-         "msg" : f'The percentage of score zero is {non}%',
+         "msg" : f'The percentage of score that is not zero is {non}%',
          #"comment" : f'Quite realistic if you compare it to this class s mid-score report, lol',
          "data" : non
     }
