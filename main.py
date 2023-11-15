@@ -198,7 +198,7 @@ def Send_Id_GetClassSz(classID : schema.ClassBase , db: Session = Depends(get_db
     if classID.classID != None and classID.classID > 0:
         classSz = db.query(models.Student).join(models.Class).filter(models.Class.id == classID.classID).all()
         fullClass = db.query(models.Class).all()
-        #Tổng số học sinh trong lớp
+        #Tổng số sinh viên  trong lớp
         num_Student_inClass = len(np.array(classSz))
         #Tổng số lớp
         allClass = len(np.array(fullClass))
@@ -206,7 +206,7 @@ def Send_Id_GetClassSz(classID : schema.ClassBase , db: Session = Depends(get_db
         if (classID.classID > allClass):
             return f"Mã lớp {classID.classID} không tồn tại !"
         else:
-            return f"Sĩ số lớp có mã lớp {classID.classID} là {num_Student_inClass} học sinh"
+            return f"Sĩ số lớp có mã lớp {classID.classID} là {num_Student_inClass} sinh viên "
     else:
         raise HTTPException(status_code=404, detail=
             f"Mã lớp {classID.classID} không hợp lệ !"
@@ -311,7 +311,7 @@ def post_classroom(classroom: schema.Classroom, db : Session = Depends(get_db)):
 ############################## TranTu Region
 #Numpy
 
-#Tính điểm trung bình cuối kì tất cả các môn của một học sinh theo mã học sinh
+#Tính điểm trung bình cuối kì tất cả các môn của một sinh viên  theo mã sinh viên 
 @app.get('/average_grade/{student_id}', tags=['Trần Văn Tú Numpy'],
          description= des.des_api['TranTuNP']['TrungBinhCuoiKi'])
 def get_average_grade(student_id: int, db: Session = Depends(get_db)):
@@ -324,7 +324,7 @@ def get_average_grade(student_id: int, db: Session = Depends(get_db)):
         if grades:
             grade_values = np.array([grade.final for grade in grades])
             average_grade = np.mean(grade_values)
-            return student.name + ' mã học sinh ' + str(student_id) + ' có điểm cuối kì trung bình là  ' + str(average_grade)
+            return student.name + ' mã sinh viên  ' + str(student_id) + ' có điểm cuối kì trung bình là  ' + str(average_grade)
         
         else:
             return {
@@ -332,7 +332,7 @@ def get_average_grade(student_id: int, db: Session = Depends(get_db)):
             }
         
     else:
-        raise HTTPException(status_code=404, detail=f"Học sinh với ID {student_id} không tồn tại.")
+        raise HTTPException(status_code=404, detail=f"sinh viên  với ID {student_id} không tồn tại.")
     
 ################################
 #Điểm trung bình cuối kì tất cả các môn của một lớp theo mã lớp
@@ -363,7 +363,7 @@ def Calculate_Class_Avg(classID: schema.ClassBase, db: Session = Depends(get_db)
 
 #Pandas
 
-#Đếm số học sinh qua môn
+#Đếm số sinh viên qua môn
 @app.get('/passing_students/{subject_id}', tags=['Trần Văn Tú Pandas'],
          description=des.des_api['TranTuPD']['QuaMon'])
 def count_passing_students_by_subject(subject_id: int, db: Session = Depends(get_db)):
@@ -386,7 +386,7 @@ def count_passing_students_by_subject(subject_id: int, db: Session = Depends(get
             num_passing_students = len(df_students)
 
             return {
-                "msg": f"Số học sinh qua môn {subject.name} là: {num_passing_students}"
+                "msg": f"Số sinh viên  qua môn {subject.name} là: {num_passing_students}"
             }
     else:
         raise HTTPException(status_code=404, detail={
